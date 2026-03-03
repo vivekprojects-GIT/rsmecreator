@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RSMEcreator - Resume Tailoring</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #0f0f12; color: #e8e8ed; min-height: 100vh; line-height: 1.6; }
+    .app { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    h1 { margin: 0; font-size: 1.75rem; }
+    .subtitle { color: #9898a6; font-size: 0.95rem; margin-top: 0.5rem; }
+    .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0; }
+    @media (max-width: 768px) { .inputs { grid-template-columns: 1fr; } }
+    label { display: block; font-weight: 600; color: #9898a6; margin-bottom: 0.5rem; font-size: 0.9rem; }
+    textarea { width: 100%; padding: 1rem; background: #1e1e24; border: 1px solid #2a2a32; border-radius: 8px; color: #e8e8ed; font-family: monospace; font-size: 0.875rem; resize: vertical; min-height: 200px; }
+    textarea:focus { outline: none; border-color: #6366f1; }
+    .btn { padding: 0.75rem 1.5rem; background: #6366f1; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    .btn:hover:not(:disabled) { background: #818cf8; }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 0.5rem; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .alert { padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+    .alert-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; }
+    .result { margin-top: 2rem; padding: 1.5rem; background: #18181c; border: 1px solid #2a2a32; border-radius: 12px; }
+    .result h2 { margin: 0 0 1rem; font-size: 1.25rem; }
+    .ats-section { background: #1a1a20; border: 1px solid #2a2a32; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .ats-heading { margin: 0 0 1rem; font-size: 1.1rem; color: #e8e8ed; }
+    #atsContent { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .ats-score { background: linear-gradient(135deg, #1e1e24 0%, #2a2a32 100%); border: 1px solid #2a2a32; border-radius: 12px; padding: 1.25rem 1.5rem; min-width: 140px; text-align: center; }
+    .ats-score .number { font-size: 2.5rem; font-weight: 700; color: #6366f1; line-height: 1; }
+    .ats-score .label { font-size: 0.8rem; color: #9898a6; margin-top: 0.25rem; }
+    .ats-score.grade-A .number { color: #22c55e; }
+    .ats-score.grade-B .number { color: #84cc16; }
+    .ats-score.grade-C .number { color: #eab308; }
+    .ats-score.grade-D .number { color: #ef4444; }
+    .ats-breakdown { flex: 1; min-width: 280px; }
+    .ats-breakdown h4 { margin: 0 0 0.5rem; font-size: 0.9rem; color: #9898a6; }
+    .ats-bar { height: 8px; background: #1e1e24; border-radius: 4px; overflow: hidden; margin: 0.25rem 0 0.5rem; }
+    .ats-bar-fill { height: 100%; background: #6366f1; border-radius: 4px; transition: width 0.3s; }
+    .ats-item { margin-bottom: 0.5rem; font-size: 0.85rem; }
+    .ats-item span { color: #9898a6; }
+    .analytics-suggestions { background: #1e1e24; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+    .analytics-suggestions h4 { margin: 0 0 0.5rem; font-size: 0.9rem; }
+    .analytics-suggestions ul { margin: 0; padding-left: 1.25rem; color: #9898a6; font-size: 0.875rem; }
+    .ats-placeholder { color: #9898a6; font-size: 0.9rem; margin: 0; }
+    .resume-preview { padding: 1.5rem; background: #1e1e24; border-radius: 8px; white-space: pre-wrap; font-size: 0.9rem; line-height: 1.7; }
+    .result-actions { margin: 1rem 0; }
+    .api-url { margin: 1rem 0; font-size: 0.85rem; color: #9898a6; }
+    .api-url input { width: 100%; max-width: 400px; padding: 0.5rem; background: #1e1e24; border: 1px solid #2a2a32; border-radius: 6px; color: #e8e8ed; }
+    .file-hint { font-size: 0.8rem; color: #9898a6; margin-top: 0.25rem; }
+    input[type="file"] { margin-top: 0.5rem; font-size: 0.85rem; color: #9898a6; }
+    .or-divider { text-align: center; color: #9898a6; font-size: 0.85rem; margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>RSMEcreator</h1>
+    <p class="subtitle">Agentic AI Resume Tailoring — tailor your resume to any job description</p>
+
+    <div class="api-url">
+      <label>API URL (leave blank when using /ui — uses same server)</label>
+      <input type="text" id="apiUrl" value="" placeholder="Leave blank if using /ui from this server" />
+    </div>
+
+    <div class="inputs">
+      <div>
+        <label>Your Resume</label>
+        <textarea id="resume" placeholder="Paste your resume..."></textarea>
+        <p class="or-divider">— or upload DOCX —</p>
+        <input type="file" id="resumeFile" accept=".docx,.doc,.txt,.md" />
+      </div>
+      <div>
+        <label>Job Description</label>
+        <textarea id="jd" placeholder="Paste the job description..."></textarea>
+        <p class="or-divider">— or upload DOCX —</p>
+        <input type="file" id="jdFile" accept=".docx,.doc,.txt,.md" />
+      </div>
+    </div>
+
+    <button class="btn" id="tailorBtn" onclick="tailor()">✨ Tailor Resume</button>
+
+    <div id="error" class="alert alert-error" style="display:none;"></div>
+    <div id="result" class="result" style="display:none;">
+      <div id="atsSection" class="ats-section">
+        <h3 class="ats-heading">ATS Score &amp; Analytics</h3>
+        <div id="atsContent"></div>
+      </div>
+      <h2>Tailored Resume</h2>
+      <div class="result-actions">
+        <button class="btn" onclick="download()">Download Markdown</button>
+      </div>
+      <pre class="resume-preview" id="preview"></pre>
+    </div>
+  </div>
+
+  <script>
+    let lastResult = null;
+
+    async function tailor() {
+      const resume = document.getElementById('resume').value.trim();
+      const jd = document.getElementById('jd').value.trim();
+      const resumeFile = document.getElementById('resumeFile').files[0];
+      const jdFile = document.getElementById('jdFile').files[0];
+      const apiUrl = (document.getElementById('apiUrl').value || window.location.origin).replace(/\/$/, '');
+      const btn = document.getElementById('tailorBtn');
+      const errEl = document.getElementById('error');
+      const resultEl = document.getElementById('result');
+
+      errEl.style.display = 'none';
+      resultEl.style.display = 'none';
+
+      const hasResume = resume || resumeFile;
+      const hasJd = jd || jdFile;
+      if (!hasResume || !hasJd) {
+        errEl.textContent = 'Please provide both resume and job description (paste text or upload DOCX).';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Tailoring...';
+
+      try {
+        let res;
+        if (resumeFile || jdFile) {
+          const fd = new FormData();
+          fd.append('resume', resume);
+          fd.append('job_description', jd);
+          fd.append('output_format', 'markdown');
+          if (resumeFile) fd.append('resume_file', resumeFile);
+          if (jdFile) fd.append('jd_file', jdFile);
+          res = await fetch(apiUrl + '/api/v1/tailor/upload', { method: 'POST', body: fd });
+        } else {
+          res = await fetch(apiUrl + '/api/v1/tailor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resume, job_description: jd, output_format: 'markdown' })
+          });
+        }
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || data.message || 'Request failed');
+        }
+
+        lastResult = data;
+        document.getElementById('preview').textContent = data.final_resume || '';
+        renderAtsAnalytics(data);
+        resultEl.style.display = 'block';
+      } catch (e) {
+        let msg = e.message || 'Unknown error';
+        if (msg === 'Failed to fetch' || msg.includes('fetch')) {
+          msg = 'Cannot reach the API. Ensure: (1) API is running: python -m uvicorn api.main:app --port 8000  (2) Open this page via http://localhost:8080/index-standalone.html (not file://)  (3) API URL above is correct.';
+        }
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✨ Tailor Resume';
+      }
+    }
+
+    function renderAtsAnalytics(data) {
+      const content = document.getElementById('atsContent');
+      const a = data.ats_analytics;
+      const score = data.ats_score ?? 0;
+
+      if (!a || a.error) {
+        content.innerHTML = '<p class="ats-placeholder">Restart the API to see ATS score and analytics.</p>';
+        return;
+      }
+
+      const grade = (a && a.grade) || (score >= 80 ? 'A' : score >= 65 ? 'B' : score >= 50 ? 'C' : 'D');
+      let html = '<div class="ats-score grade-' + grade + '"><div class="number">' + score + '</div><div class="label">ATS Score</div></div>';
+      html += '<div class="ats-score"><div class="number">' + grade + '</div><div class="label">Grade</div></div>';
+      if (a.breakdown) {
+        html += '<div class="ats-breakdown"><h4>Score Breakdown</h4>';
+        const b = a.breakdown;
+        for (const [key, v] of Object.entries(b)) {
+          if (v && typeof v.score === 'number' && typeof v.max === 'number') {
+            const pct = Math.round((v.score / v.max) * 100);
+            const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            html += '<div class="ats-item"><span>' + label + ':</span> ' + v.score + '/' + v.max + '<div class="ats-bar"><div class="ats-bar-fill" style="width:' + pct + '%"></div></div></div>';
+          }
+        }
+        html += '</div>';
+      }
+      if (a.suggestions && a.suggestions.length) {
+        html += '<div class="analytics-suggestions"><h4>Suggestions</h4><ul>';
+        a.suggestions.forEach(s => { html += '<li>' + s + '</li>'; });
+        html += '</ul></div>';
+      }
+      content.innerHTML = html;
+    }
+
+    function download() {
+      if (!lastResult?.final_resume) return;
+      const blob = new Blob([lastResult.final_resume], { type: 'text/markdown' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tailored_resume.md';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+  </script>
+</body>
+</html>
